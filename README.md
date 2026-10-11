@@ -14,9 +14,25 @@ Native **OMP** extension yang merutekan setiap prompt ke model OnToken sesuai ti
 
 OMP tetap memakai model fisik yang dipilih. Ini sengaja berbeda dari Pi `registerVirtualModel`: provider/model yang tercatat di session adalah model yang benar-benar menerima request.
 
+## Instalasi
+
+Instal dari repository public GitHub pada perangkat lain:
+
+```bash
+omp plugin install github:priaculun/ontoken-auto-omp
+```
+
+Atau gunakan URL Git penuh:
+
+```bash
+omp plugin install https://github.com/priaculun/ontoken-auto-omp.git
+```
+
+Restart OMP setelah instalasi. Extension akan dimuat melalui manifest `omp.extensions`.
+
 ## Instalasi lokal
 
-Dari direktori paket ini:
+Dari checkout repository ini:
 
 ```bash
 # Memuat sekali tanpa mengubah konfigurasi global:
@@ -42,6 +58,7 @@ Status dan keputusan terakhir:
 ```
 
 Default extension **off** supaya tidak mengubah routing session yang sudah ada. `--extension` hanya memuat extension; `/auto on` mengaktifkan routing.
+
 
 ## Konfigurasi
 
