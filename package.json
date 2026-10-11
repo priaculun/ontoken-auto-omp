@@ -1,0 +1,13 @@
+{
+  "name": "omp-ontoken-auto",
+  "version": "1.0.0",
+  "description": "Native OMP OnToken routing with TypeSafe Jev, adaptive promotion and retry failover",
+  "type": "module",
+  "license": "MIT",
+  "omp": { "extensions": ["./src/index.ts"] },
+  "peerDependencies": {
+    "@oh-my-pi/pi-coding-agent": ">=18.9.1 <19",
+    "@oh-my-pi/pi-ai": ">=18.9.1 <19"
+  },
+  "scripts": { "test": "bun test" }
+}
