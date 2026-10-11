@@ -18,7 +18,7 @@ export interface Config {
   failover: { enabled: boolean; chain: Partial<Record<Slot, Slot[]>> };
 }
 export const defaults: Config = {
-  enabled: false,
+  enabled: true,
   provider: "ontoken",
   budget: "balanced",
   slots: { fast: "gpt-6-luna", work: "glm-5.3-flash", solid: "muse-spark-1.3", strong: "claude-sonnet-5.5", frontier: "claude-opus-5.5" },

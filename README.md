@@ -44,10 +44,10 @@ omp plugin link "$PWD"
 
 `--extension` dan `plugin link` memuat manifest `omp.extensions`. Untuk profile bernama, direktori agent mengikuti profile OMP; extension memakai `getAgentDir()`, bukan hardcoded `~/.omp/agent`. Konfigurasi Pi tidak dibaca atau diubah.
 
-Aktifkan saat session berjalan:
+Routing **aktif otomatis** setiap session dimuat (default `enabled: true`). Matikan sementara bila perlu:
 
 ```text
-/auto on
+/auto off
 ```
 
 Status dan keputusan terakhir:
@@ -57,7 +57,7 @@ Status dan keputusan terakhir:
 /auto explain
 ```
 
-Default extension **off** supaya tidak mengubah routing session yang sudah ada. `--extension` hanya memuat extension; `/auto on` mengaktifkan routing.
+`--extension` hanya memuat extension; routing langsung jalan tanpa `/auto on`.
 
 
 ## Konfigurasi
