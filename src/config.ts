@@ -23,8 +23,8 @@ export const defaults: Config = {
   budget: "balanced",
   slots: { fast: "gpt-6-luna", work: "glm-5.3-flash", solid: "muse-spark-1.3", strong: "claude-sonnet-5.5", frontier: "claude-opus-5.5" },
   maxThinking: {},
-  jev: { model: "jev-latest", promptChars: 16000, timeoutMs: 8000 },
-  adaptive: { contextAware: true, shortPromptChars: 800, midTurn: true, maxEvaluationsPerTurn: 2, toolResultsPerEvaluation: 2 },
+  jev: { model: "jev-latest", promptChars: 32000, timeoutMs: 12000 },
+  adaptive: { contextAware: true, shortPromptChars: 4000, midTurn: true, maxEvaluationsPerTurn: 2, toolResultsPerEvaluation: 2 },
   failover: { enabled: true, chain: {} },
 };
 

@@ -79,7 +79,7 @@ Overlay hanya perlu berisi key yang ingin diubah:
   },
   "adaptive": {
     "contextAware": true,
-    "shortPromptChars": 800,
+    "shortPromptChars": 4000,
     "midTurn": true,
     "maxEvaluationsPerTurn": 2,
     "toolResultsPerEvaluation": 2
