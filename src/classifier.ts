@@ -1,16 +1,26 @@
-import { TypeSafeJudge } from "@oh-my-pi/pi-ai";
+import type { Judge } from "@oh-my-pi/pi-ai";
+import * as PiAi from "@oh-my-pi/pi-ai";
 import type { ExtensionContext } from "@oh-my-pi/pi-coding-agent";
 import { readKey, type Config } from "./config.ts";
 import { heuristic, redact, type Verdict } from "./routing.ts";
 import questionFile from "./questions.json";
 
-const questions = {
-  task: { ...questionFile.task, type: "choice" as const },
-  difficulty: { ...questionFile.difficulty, type: "score" as const, criteria: questionFile.difficulty.criteria as [string, string, ...string[]] },
-  needs_reasoning: { ...questionFile.needs_reasoning, type: "noul" as const },
-  needs_vision: { ...questionFile.needs_vision, type: "noul" as const },
-  long_horizon: { ...questionFile.long_horizon, type: "noul" as const },
-};
+// OMP 18.9.2 renamed TypeSafeJudge to NativeJudge (same options shape).
+// Namespace import avoids the bundler's static named-export check, so one
+// build loads on 18.9.1 (TypeSafeJudge) and 18.9.2+ (NativeJudge).
+type JudgeConstructor = new (options: {
+  apiKey: string;
+  model: string;
+  baseUrl?: string;
+  headers?: Record<string, string>;
+  timeoutMs: number;
+}) => Judge;
+function judgeConstructor(): JudgeConstructor {
+  const exports = PiAi as unknown as Record<string, JudgeConstructor | undefined>;
+  const Ctor = exports.NativeJudge ?? exports.TypeSafeJudge;
+  if (!Ctor) throw new Error("No judgment backend; using local heuristic");
+  return Ctor;
+}
 
 export async function classify(prompt: string, hasImage: boolean, cfg: Config, ctx: ExtensionContext, agentDir: string, signal: AbortSignal): Promise<Verdict> {
   const safePrompt = redact(prompt).slice(0, cfg.jev.promptChars);
@@ -18,7 +28,7 @@ export async function classify(prompt: string, hasImage: boolean, cfg: Config, c
     const key = await ctx.modelRegistry.getApiKeyForProvider("typesafe", ctx.sessionManager.getSessionId(), { signal }) ?? readKey(agentDir, cfg);
     if (!key) throw new Error("No TypeSafe credential; using local heuristic");
     const model = ctx.modelRegistry.find("typesafe", cfg.jev.model);
-    const judge = new TypeSafeJudge({
+    const judge = new (judgeConstructor())({
       apiKey: key, model: cfg.jev.model,
       baseUrl: model?.baseUrl ?? ctx.modelRegistry.getProviderBaseUrl("typesafe"),
       headers: model ? await ctx.modelRegistry.resolveModelHeaders(model, signal) : await ctx.modelRegistry.getProviderHeaders("typesafe"),
