@@ -3,7 +3,7 @@ import * as PiAi from "@oh-my-pi/pi-ai";
 import type { ExtensionContext } from "@oh-my-pi/pi-coding-agent";
 import { readKey, type Config } from "./config.ts";
 import { heuristic, redact, type Verdict } from "./routing.ts";
-import questionFile from "./questions.json";
+import questions from "./questions.json";
 
 // OMP 18.9.2 renamed TypeSafeJudge to NativeJudge (same options shape).
 // Namespace import avoids the bundler's static named-export check, so one
