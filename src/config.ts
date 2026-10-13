@@ -24,7 +24,7 @@ export const defaults: Config = {
   slots: { fast: "gpt-6-luna", work: "glm-5.3-flash", review: "deepseek-v4-pro-0813", debug: "deepseek-v4-pro-0813", solid: "glm-5.3", strong: "gemini-3.8-flash", frontier: "gpt-6.1-sol" },
   maxThinking: {},
   jev: { model: "jev-latest", promptChars: 32000, timeoutMs: 12000 },
-  adaptive: { contextAware: true, shortPromptChars: 4000, midTurn: true, allowDemotion: true, maxEvaluationsPerTurn: 2, toolResultsPerEvaluation: 2 },
+  adaptive: { contextAware: true, shortPromptChars: 4000, midTurn: true, allowDemotion: true, maxEvaluationsPerTurn: 7, toolResultsPerEvaluation: 2 },
   failover: { enabled: true, chain: {} },
 };
 
@@ -77,7 +77,7 @@ function validate(value: ObjectValue): Config {
   for (const [name, item, min, max] of [
     ["promptChars", c.jev.promptChars, 1000, 64000], ["timeoutMs", c.jev.timeoutMs, 100, 15000],
     ["shortPromptChars", c.adaptive.shortPromptChars, 0, 64000],
-    ["maxEvaluationsPerTurn", c.adaptive.maxEvaluationsPerTurn, 0, 5],
+    ["maxEvaluationsPerTurn", c.adaptive.maxEvaluationsPerTurn, 0, 7],
     ["toolResultsPerEvaluation", c.adaptive.toolResultsPerEvaluation, 1, 10],
   ] as const) if (!Number.isSafeInteger(item) || item < min || item > max) throw new Error(`Invalid ${name}: expected ${min}..${max}`);
   return c;
