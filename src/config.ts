@@ -21,7 +21,7 @@ export const defaults: Config = {
   enabled: true,
   provider: "ontoken",
   budget: "balanced",
-  slots: { fast: "gpt-6-luna", work: "glm-5.3-flash", solid: "muse-spark-1.3", strong: "claude-sonnet-5.5", frontier: "claude-opus-5.5" },
+  slots: { fast: "gpt-6-luna", work: "glm-5.3-flash", solid: "glm-5.3", strong: "deepseek-v4-pro-0813", frontier: "gpt-6.1-sol" },
   maxThinking: {},
   jev: { model: "jev-latest", promptChars: 32000, timeoutMs: 12000 },
   adaptive: { contextAware: true, shortPromptChars: 4000, midTurn: true, maxEvaluationsPerTurn: 2, toolResultsPerEvaluation: 2 },

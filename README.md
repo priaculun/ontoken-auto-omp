@@ -73,9 +73,9 @@ Overlay hanya perlu berisi key yang ingin diubah:
   "slots": {
     "fast": "gpt-6-luna",
     "work": "glm-5.3-flash",
-    "solid": "muse-spark-1.3",
-    "strong": "claude-sonnet-5.5",
-    "frontier": "claude-opus-5.5"
+    "solid": "glm-5.3",
+    "strong": "deepseek-v4-pro-0813",
+    "frontier": "gpt-6.1-sol"
   },
   "adaptive": {
     "contextAware": true,
@@ -87,10 +87,14 @@ Overlay hanya perlu berisi key yang ingin diubah:
   "failover": {
     "enabled": true,
     "chain": {
+      "fast": ["solid", "work"],
       "work": ["solid", "fast"],
-      "solid": ["strong", "work"]
+      "solid": ["strong", "work"],
+      "strong": ["frontier", "solid"],
+      "frontier": ["strong", "solid"]
     }
-  }
+  },
+  "maxThinking": { "frontier": "xhigh" }
 }
 ```
 
