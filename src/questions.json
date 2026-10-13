@@ -9,7 +9,7 @@
       "coding": "Implement or change features and tests",
       "debug": "Find or fix a defect or failing test",
       "design": "Architecture, API shape or cross-cutting design",
-      "review": "Review or audit code or a plan",
+      "review": "Review or audit code, a plan or a change for defects and risks",
       "research": "Investigate options, documentation or code before deciding"
     }
   },
@@ -17,6 +17,10 @@
     "type": "score",
     "instructions": "How demanding is this work for a coding agent?",
     "criteria": ["trivial one-shot", "routine local change", "involved multi-file work", "hard debugging or design", "subtle, high-stakes or very large work"]
+  },
+  "risk": {
+    "type": "noul",
+    "instructions": "Would a mistake here cause real damage — data loss, security exposure, broken production, or a hard-to-reverse change? Consider the conversation context, not just the last message."
   },
   "needs_reasoning": {
     "type": "noul",

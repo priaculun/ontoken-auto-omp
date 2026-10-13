@@ -2,7 +2,7 @@ import type { Model } from "@oh-my-pi/pi-ai";
 import { ceiling, SLOTS, THINKING, type Config, type Slot, type Thinking } from "./config.ts";
 
 export interface Verdict {
-  task: string; difficulty: number; needsReasoning: boolean; needsVision: boolean;
+  task: string; difficulty: number; risk: boolean; needsReasoning: boolean; needsVision: boolean;
   longHorizon: boolean; confidence: number; source: "jev" | "fallback"; error?: string;
 }
 export interface Route { slot: Slot; thinking: Thinking; rule: string }
@@ -12,13 +12,23 @@ export function heuristic(prompt: string, hasImage: boolean): Verdict {
   const coding = /\b(implement\w*|fix|add|edit|write|test|tulis|buat|ubah|perbaiki|tambahkan)\b/i.test(prompt);
   const task = debug ? "debug" : hard ? "design" : coding ? "coding" : prompt.length < 240 ? "chat" : "research";
   return { task, difficulty: hard || debug ? 3 : coding ? 1 : task === "chat" ? 0 : 2,
-    needsReasoning: hard || debug, needsVision: hasImage, longHorizon: hard || prompt.length > 2500, confidence: 0.35, source: "fallback" };
+    risk: hard, needsReasoning: hard || debug, needsVision: hasImage, longHorizon: hard || prompt.length > 2500, confidence: 0.35, source: "fallback" };
 }
 export function pickRoute(cfg: Config, v: Verdict): Route {
   let slot: Slot = "work", thinking: Thinking = "low", rule = "fallback";
   if (["chat", "lookup"].includes(v.task) && v.difficulty === 0 && !v.needsReasoning) {
     slot = "fast"; thinking = "off"; rule = "chat-trivial";
-  } else if (["mechanical", "coding", "review"].includes(v.task) && v.difficulty <= 1) {
+  } else if (v.task === "review") {
+    // Reviewers need breadth and low hallucination, not raw coding strength.
+    slot = v.risk || v.difficulty >= 3 ? "strong" : "review";
+    thinking = v.difficulty >= 3 ? "high" : "medium";
+    rule = v.risk ? "review-high-stakes" : "review";
+  } else if (v.task === "debug") {
+    // Debugging rewards methodical hypothesis testing over speed.
+    slot = v.difficulty >= 4 ? "strong" : v.difficulty === 3 ? "debug" : "work";
+    thinking = v.difficulty >= 3 ? "high" : "medium";
+    rule = v.difficulty >= 4 ? "debug-frontier" : v.difficulty === 3 ? "debug-hard" : "debug-routine";
+  } else if (["mechanical", "coding"].includes(v.task) && v.difficulty <= 1) {
     rule = "routine";
   } else if (v.difficulty <= 2) {
     thinking = "high"; rule = "involved";
@@ -29,7 +39,9 @@ export function pickRoute(cfg: Config, v: Verdict): Route {
     thinking = v.needsReasoning ? v.confidence >= 0.7 ? "max" : "xhigh" : "high";
     rule = "frontier";
   }
-  if (v.longHorizon && SLOTS.indexOf(slot) < 2) { slot = "solid"; thinking = "high"; rule += "+long"; }
+  // High-risk non-review work never runs below solid, whatever the difficulty.
+  if (v.risk && SLOTS.indexOf(slot) < SLOTS.indexOf("solid")) { slot = "solid"; thinking = "high"; rule += "+risk"; }
+  if (v.longHorizon && SLOTS.indexOf(slot) < SLOTS.indexOf("solid")) { slot = "solid"; thinking = "high"; rule += "+long"; }
   if (SLOTS.indexOf(slot) > ceiling(cfg)) { slot = SLOTS[ceiling(cfg)]; rule += "+budget"; }
   if (v.source === "fallback") thinking = "low";
   return { slot, thinking, rule };
@@ -61,7 +73,7 @@ export function redact(text: string): string {
 }
 export function contentText(content: unknown): string {
   if (typeof content === "string") return content;
-  if (!Array.isArray(content)) return "";
+  if (!Array.isArray(content)) return content;
   return content.filter(b => b?.type === "text" && typeof b.text === "string").map(b => b.text).join("\n");
 }
 export function transientError(message: string): boolean {

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-export const SLOTS = ["fast", "work", "solid", "strong", "frontier"] as const;
+export const SLOTS = ["fast", "work", "review", "debug", "solid", "strong", "frontier"] as const;
 export const THINKING = ["off", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
 export const BUDGETS = ["cheap", "balanced", "quality"] as const;
 export type Slot = typeof SLOTS[number];
@@ -14,17 +14,17 @@ export interface Config {
   slots: Record<Slot, string>;
   maxThinking: Partial<Record<Slot, Thinking>>;
   jev: { model: string; keyFile?: string; promptChars: number; timeoutMs: number };
-  adaptive: { contextAware: boolean; shortPromptChars: number; midTurn: boolean; maxEvaluationsPerTurn: number; toolResultsPerEvaluation: number };
+  adaptive: { contextAware: boolean; shortPromptChars: number; midTurn: boolean; allowDemotion: boolean; maxEvaluationsPerTurn: number; toolResultsPerEvaluation: number };
   failover: { enabled: boolean; chain: Partial<Record<Slot, Slot[]>> };
 }
 export const defaults: Config = {
   enabled: true,
   provider: "ontoken",
   budget: "balanced",
-  slots: { fast: "gpt-6-luna", work: "glm-5.3-flash", solid: "glm-5.3", strong: "deepseek-v4-pro-0813", frontier: "gpt-6.1-sol" },
+  slots: { fast: "gpt-6-luna", work: "glm-5.3-flash", review: "deepseek-v4-pro-0813", debug: "deepseek-v4-pro-0813", solid: "glm-5.3", strong: "gemini-3.8-flash", frontier: "gpt-6.1-sol" },
   maxThinking: {},
   jev: { model: "jev-latest", promptChars: 32000, timeoutMs: 12000 },
-  adaptive: { contextAware: true, shortPromptChars: 4000, midTurn: true, maxEvaluationsPerTurn: 2, toolResultsPerEvaluation: 2 },
+  adaptive: { contextAware: true, shortPromptChars: 4000, midTurn: true, allowDemotion: true, maxEvaluationsPerTurn: 2, toolResultsPerEvaluation: 2 },
   failover: { enabled: true, chain: {} },
 };
 
@@ -65,7 +65,7 @@ function validate(value: ObjectValue): Config {
     if (!object(value[key])) throw new Error(`Invalid config: ${key}`);
   const c = value as unknown as Config;
   if (!object(c.failover.chain)) throw new Error("Invalid failover.chain");
-  for (const [name, item] of Object.entries({ enabled: c.enabled, contextAware: c.adaptive.contextAware, midTurn: c.adaptive.midTurn, failover: c.failover.enabled }))
+  for (const [name, item] of Object.entries({ enabled: c.enabled, contextAware: c.adaptive.contextAware, midTurn: c.adaptive.midTurn, allowDemotion: c.adaptive.allowDemotion, failover: c.failover.enabled }))
     if (typeof item !== "boolean") throw new Error(`Invalid boolean: ${name}`);
   for (const [name, item] of Object.entries({ provider: c.provider, model: c.jev.model, ...c.slots }))
     if (typeof item !== "string" || !item.trim()) throw new Error(`Invalid model/provider: ${name}`);
@@ -99,4 +99,4 @@ export function readKey(agentDir: string, cfg: Config): string | undefined {
     } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
   }
 }
-export function ceiling(cfg: Config): number { return cfg.budget === "cheap" ? 2 : 4; }
+export function ceiling(cfg: Config): number { return cfg.budget === "cheap" ? 3 : 6; }

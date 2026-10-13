@@ -6,8 +6,9 @@ Native **OMP** extension yang merutekan setiap prompt ke model OnToken sesuai ti
 
 - **Jev classification** melalui TypeSafe ketika `TYPESAFE_API_KEY` tersedia atau key ditemukan di `~/.omp/agent/secrets/typesafe_api_key`.
 - **Heuristic fallback** jika classifier tidak tersedia atau gagal. Turn tetap berjalan.
-- Slot model: `fast`, `work`, `solid`, `strong`, `frontier`.
-- **Adaptive promotion** setelah sejumlah hasil tool pada turn yang sama; hanya boleh naik, tidak turun.
+- Slot model: `fast`, `work`, `review`, `debug`, `solid`, `strong`, `frontier` — task-aware: review dan debug punya specialist sendiri.
+- **Risk-aware routing**: pekerjaan berisiko (data loss, production, security) tidak pernah turun di bawah `solid`.
+- **Adaptive promotion & demotion** mid-turn: setelah sejumlah hasil tool pada turn yang sama, Jev menilai ulang dan bisa naik ATAU turun slot (`adaptive.allowDemotion`, default on; demotion tidak pernah untuk pekerjaan berisiko).
 - **Failover** pada retryable provider errors; auth, billing, quota, abort, dan context overflow tidak dipindahkan secara blind.
 - Redaction best-effort sebelum prompt/progress dikirim ke TypeSafe.
 - State route disimpan sebagai custom session entries agar branch/resume/compaction tidak kehilangan keputusan.
@@ -73,14 +74,17 @@ Overlay hanya perlu berisi key yang ingin diubah:
   "slots": {
     "fast": "gpt-6-luna",
     "work": "glm-5.3-flash",
+    "review": "deepseek-v4-pro-0813",
+    "debug": "deepseek-v4-pro-0813",
     "solid": "glm-5.3",
-    "strong": "deepseek-v4-pro-0813",
+    "strong": "gemini-3.8-flash",
     "frontier": "gpt-6.1-sol"
   },
   "adaptive": {
     "contextAware": true,
     "shortPromptChars": 4000,
     "midTurn": true,
+    "allowDemotion": true,
     "maxEvaluationsPerTurn": 2,
     "toolResultsPerEvaluation": 2
   },
@@ -89,7 +93,9 @@ Overlay hanya perlu berisi key yang ingin diubah:
     "chain": {
       "fast": ["solid", "work"],
       "work": ["solid", "fast"],
-      "solid": ["strong", "work"],
+      "review": ["debug", "work"],
+      "debug": ["solid", "work"],
+      "solid": ["strong", "debug"],
       "strong": ["frontier", "solid"],
       "frontier": ["strong", "solid"]
     }
@@ -98,7 +104,7 @@ Overlay hanya perlu berisi key yang ingin diubah:
 }
 ```
 
-`cheap` membatasi slot router sampai `solid`; `balanced` sampai `frontier`; `quality` mempromosikan difficulty 3 ke `strong`. `/auto budget ...`, `/auto slot ...`, dan `/auto on|off` mengubah session aktif dan disimpan sebagai session entry, bukan file global. Override session menang atas file project.
+`cheap` membatasi slot router sampai `debug`; `balanced` sampai `frontier`; `quality` mempromosikan difficulty 3 ke `strong`. Routing task-aware: review rutin → `review`, review berisiko → `strong`, debug sulit → `debug`, debug sangat sulit → `strong`; pekerjaan berisiko tidak pernah di bawah `solid`. `/auto budget ...`, `/auto slot ...`, dan `/auto on|off` mengubah session aktif dan disimpan sebagai session entry, bukan file global. Override session menang atas file project.
 
 Jika tidak ada model roster yang tersedia untuk budget/modalitas, extension memberi peringatan dan mempertahankan model aktif. Budget ini batas pemilihan slot, bukan spending cap atau jaminan harga. Banyak model pada catalog lokal melaporkan harga belum diketahui.
 

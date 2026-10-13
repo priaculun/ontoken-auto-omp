@@ -161,10 +161,16 @@ export default function ontokenAuto(omp: ExtensionAPI) {
       signal.throwIfAborted();
       if (state !== previous || v.source !== "jev") return;
       const picked = pickRoute(cfg, v);
-      if (SLOTS.indexOf(picked.slot) <= SLOTS.indexOf(previous.route.slot)) return;
-      if (THINKING.indexOf(picked.thinking) < THINKING.indexOf(previous.route.thinking)) picked.thinking = previous.route.thinking;
+      const target = SLOTS.indexOf(picked.slot), current = SLOTS.indexOf(previous.route.slot);
+      if (target > current) {
+        if (THINKING.indexOf(picked.thinking) < THINKING.indexOf(previous.route.thinking)) picked.thinking = previous.route.thinking;
+      } else if (target < current) {
+        // Demotion: only with consent, never mid-turn for risky work, never below work.
+        if (!cfg.adaptive.allowDemotion || v.risk || target < SLOTS.indexOf("work")) return;
+        if (previous.route.rule.includes("+failover")) return;
+      } else return;
       picked.rule += "+adaptive";
-      if (await apply(cfg, ctx, picked, v, signal, SLOTS.indexOf(previous.route.slot) + 1)) record(ctx, `Adaptive promotion after ${tools} tool results`);
+      if (await apply(cfg, ctx, picked, v, signal, target > current ? current + 1 : 0)) record(ctx, `Adaptive ${target > current ? "promotion" : "demotion"} after ${tools} tool results`);
     })();
     pending = run;
     try { await run; } finally { if (pending === run) pending = undefined; }

@@ -12,7 +12,7 @@ function model(id: string, vision = true): Model {
 test("cheap budget cannot escape through missing-slot resolution", () => {
   const cfg = { ...defaults, budget: "cheap" as const };
   const route = pickRoute(cfg, hard);
-  expect(route.slot).toBe("solid");
+  expect(route.slot).toBe("debug");
   expect(resolveRoute(cfg, route, [model(cfg.slots.frontier)], false)).toBeUndefined();
 });
 test("adaptive promotion cannot fall back to a weaker available model", () => {

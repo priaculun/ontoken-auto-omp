@@ -36,11 +36,12 @@ export async function classify(prompt: string, hasImage: boolean, cfg: Config, c
     });
     const result = await judge.judge({ state: { prompt: safePrompt, has_image: hasImage }, questions }, { signal });
     const a = result.answers;
-    if (a.task.type !== "choice" || a.difficulty.type !== "score" || a.needs_reasoning.type !== "noul" || a.needs_vision.type !== "noul" || a.long_horizon.type !== "noul") throw new Error("Invalid Jev answer types");
-    const values = [a.difficulty.score, a.task.confidence, a.difficulty.confidence, a.needs_reasoning.noul, a.needs_vision.noul, a.long_horizon.noul];
+    if (a.task.type !== "choice" || a.difficulty.type !== "score" || a.risk.type !== "noul" || a.needs_reasoning.type !== "noul" || a.needs_vision.type !== "noul" || a.long_horizon.type !== "noul") throw new Error("Invalid Jev answer types");
+    const values = [a.difficulty.score, a.task.confidence, a.difficulty.confidence, a.risk.noul, a.needs_reasoning.noul, a.needs_vision.noul, a.long_horizon.noul];
     if (values.some(v => !Number.isFinite(v)) || !(a.task.choice in questions.task.criteria)) throw new Error("Invalid Jev answer values");
     return {
       task: a.task.choice, difficulty: Math.min(4, Math.max(0, Math.round(a.difficulty.score))),
+      risk: a.risk.noul >= 0.5,
       needsReasoning: a.needs_reasoning.noul >= 0.5, needsVision: hasImage || a.needs_vision.noul >= 0.5,
       longHorizon: a.long_horizon.noul >= 0.5,
       confidence: Math.min(1, Math.max(0, (a.task.confidence + a.difficulty.confidence) / 2)), source: "jev",
