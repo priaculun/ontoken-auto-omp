@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { defaults } from "../src/config.ts";
-import { confirmDemotion, heuristic, pickRoute, type Slot, type Verdict } from "../src/routing.ts";
+import { defaults, type Slot } from "../src/config.ts";
+import { confirmDemotion, heuristic, pickRoute, type Verdict } from "../src/routing.ts";
 
 function verdict(over: Partial<Verdict>): Verdict {
   return { task: "coding", difficulty: 1, risk: false, needsReasoning: false, needsVision: false, longHorizon: false, confidence: 0.9, source: "jev", ...over };
