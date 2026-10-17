@@ -1,6 +1,6 @@
 {
   "name": "omp-ontoken-auto",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Native OMP OnToken routing with TypeSafe Jev, adaptive promotion and retry failover",
   "type": "module",
   "license": "MIT",

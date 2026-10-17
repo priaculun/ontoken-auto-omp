@@ -235,7 +235,7 @@ export default function ontokenAuto(omp: ExtensionAPI) {
   });
 
   omp.registerCommand("auto", {
-    description: "OnToken router: on/off, budget, slot, status, explain",
+    description: "OnToken router: on/off, debug on/off, budget, slot, status, explain",
     handler: async (args, ctx) => {
       if (ctx.agent.kind !== "main") return;
       const [cmd = "status", value, model, ...extra] = args.trim().split(/\s+/).filter(Boolean);
