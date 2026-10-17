@@ -57,6 +57,23 @@ export function confirmDemotion(tally: DemoteTally, target: Slot, required = 2):
   tally.slot = undefined; tally.votes = 0;
   return true;
 }
+export type AdaptiveMove = "promote" | "demote" | "hold";
+// Single decision point for mid-turn adaptation. The demotion streak is owned
+// here: any evaluation that is not an eligible demotion to a lower slot (same
+// slot, promotion, or an ineligible candidate) resets the tally, so only
+// consecutive agreeing evaluations can trigger a model swap.
+export function adaptiveMove(tally: DemoteTally, current: Slot, picked: Slot, demoteEligible: boolean, required = 2): AdaptiveMove {
+  const target = SLOTS.indexOf(picked), cur = SLOTS.indexOf(current);
+  if (target > cur) {
+    tally.slot = undefined; tally.votes = 0;
+    return "promote";
+  }
+  if (target === cur || !demoteEligible) {
+    tally.slot = undefined; tally.votes = 0;
+    return "hold";
+  }
+  return confirmDemotion(tally, picked, required) ? "demote" : "hold";
+}
 export function resolveRoute(cfg: Config, route: Route, models: readonly Model[], needsVision: boolean, minSlot = 0): { model: Model; route: Route } | undefined {
   const requested = SLOTS.indexOf(route.slot);
   const candidates = [requested, ...SLOTS.map((_, i) => i).filter(i => i !== requested)];

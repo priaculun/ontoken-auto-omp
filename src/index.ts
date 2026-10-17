@@ -2,7 +2,7 @@ import { Effort } from "@oh-my-pi/pi-ai";
 import type { ExtensionAPI, ExtensionContext } from "@oh-my-pi/pi-coding-agent";
 import { classify } from "./classifier.ts";
 import { BUDGETS, SLOTS, THINKING, ceiling, configPaths, loadConfig, type Budget, type Config, type Slot } from "./config.ts";
-import { contentText, confirmDemotion, heuristic, pickRoute, redact, resolveRoute, transientError, type DemoteTally, type Route, type Verdict } from "./routing.ts";
+import { adaptiveMove, contentText, heuristic, pickRoute, redact, resolveRoute, transientError, type DemoteTally, type Route, type Verdict } from "./routing.ts";
 interface State {
   route: Route;
   modelId: string;
@@ -159,23 +159,22 @@ export default function ontokenAuto(omp: ExtensionAPI) {
       const prompt = `TASK:\n${objective.slice(-Math.floor(cfg.jev.promptChars / 2))}\n\nPROGRESS:\n${progress.join("\n\n")}\nReassess remaining work.`;
       const v = await verdict(prompt, cfg, ctx, signal);
       signal.throwIfAborted();
-      if (state !== previous || v.source !== "jev") return;
+      if (state !== previous) return;
+      // A fallback verdict carries no slot signal; it must not feed the streak.
+      if (v.source !== "jev") { demote = { slot: undefined, votes: 0 }; return; }
       const picked = pickRoute(cfg, v);
-      const target = SLOTS.indexOf(picked.slot), current = SLOTS.indexOf(previous.route.slot);
-      if (target > current) {
-        // Promotion is immediate; thinking never drops on the way up. Any pending
-        // demotion votes are stale once the trajectory turns upward.
-        demote = { slot: undefined, votes: 0 };
-        if (THINKING.indexOf(picked.thinking) < THINKING.indexOf(previous.route.thinking)) picked.thinking = previous.route.thinking;
-      } else if (target < current) {
-        // Demotion: only with consent, never mid-turn for risky work, never below work,
-        // and only after consecutive evaluations agree on the same lower slot (hysteresis).
-        if (!cfg.adaptive.allowDemotion || v.risk || target < SLOTS.indexOf("work")) return;
-        if (previous.route.rule.includes("+failover")) return;
-        if (!confirmDemotion(demote, picked.slot)) return;
-      } else return;
+      const demoteEligible = cfg.adaptive.allowDemotion && !v.risk
+        && SLOTS.indexOf(picked.slot) >= SLOTS.indexOf("work")
+        && !previous.route.rule.includes("+failover");
+      const move = adaptiveMove(demote, previous.route.slot, picked.slot, demoteEligible);
+      if (move === "hold") return;
+      if (move === "promote" && THINKING.indexOf(picked.thinking) < THINKING.indexOf(previous.route.thinking)) {
+        // Promotion is immediate; thinking never drops on the way up.
+        picked.thinking = previous.route.thinking;
+      }
       picked.rule += "+adaptive";
-      if (await apply(cfg, ctx, picked, v, signal, target > current ? current + 1 : 0)) record(ctx, `Adaptive ${target > current ? "promotion" : "demotion"} after ${tools} tool results`);
+      const target = SLOTS.indexOf(picked.slot), current = SLOTS.indexOf(previous.route.slot);
+      if (await apply(cfg, ctx, picked, v, signal, move === "promote" ? current + 1 : 0)) record(ctx, `Adaptive ${move === "promote" ? "promotion" : "demotion"} after ${tools} tool results`);
     })();
     pending = run;
     try { await run; } finally { if (pending === run) pending = undefined; }

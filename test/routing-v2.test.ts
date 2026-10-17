@@ -1,20 +1,40 @@
 import { expect, test } from "bun:test";
 import { defaults, type Slot } from "../src/config.ts";
-import { confirmDemotion, heuristic, pickRoute, type Verdict } from "../src/routing.ts";
+import { adaptiveMove, confirmDemotion, heuristic, pickRoute, type DemoteTally, type Verdict } from "../src/routing.ts";
 
 function verdict(over: Partial<Verdict>): Verdict {
   return { task: "coding", difficulty: 1, risk: false, needsReasoning: false, needsVision: false, longHorizon: false, confidence: 0.9, source: "jev", ...over };
 }
 test("demotion needs two consecutive evaluations on the same lower slot", () => {
-  const tally = { slot: undefined as Slot | undefined, votes: 0 };
+  const tally: DemoteTally = { slot: undefined, votes: 0 };
   expect(confirmDemotion(tally, "work")).toBe(false);
   expect(confirmDemotion(tally, "work")).toBe(true);
 });
 test("demotion votes reset when evaluations disagree on the target slot", () => {
-  const tally = { slot: undefined as Slot | undefined, votes: 0 };
+  const tally: DemoteTally = { slot: undefined, votes: 0 };
   expect(confirmDemotion(tally, "work")).toBe(false);
   expect(confirmDemotion(tally, "debug")).toBe(false);
   expect(confirmDemotion(tally, "debug")).toBe(true);
+});
+test("same-slot evaluation between demotions breaks the streak", () => {
+  const tally: DemoteTally = { slot: undefined, votes: 0 };
+  expect(adaptiveMove(tally, "solid", "work", true)).toBe("hold");
+  expect(adaptiveMove(tally, "solid", "solid", true)).toBe("hold");
+  expect(adaptiveMove(tally, "solid", "work", true)).toBe("hold");
+  expect(adaptiveMove(tally, "solid", "work", true)).toBe("demote");
+});
+test("ineligible demotion (risk/gated) breaks the streak", () => {
+  const tally: DemoteTally = { slot: undefined, votes: 0 };
+  expect(adaptiveMove(tally, "solid", "work", true)).toBe("hold");
+  expect(adaptiveMove(tally, "solid", "work", false)).toBe("hold");
+  expect(adaptiveMove(tally, "solid", "work", true)).toBe("hold");
+  expect(adaptiveMove(tally, "solid", "work", true)).toBe("demote");
+});
+test("promotion resets a pending demotion streak", () => {
+  const tally: DemoteTally = { slot: undefined, votes: 0 };
+  expect(adaptiveMove(tally, "solid", "work", true)).toBe("hold");
+  expect(adaptiveMove(tally, "solid", "strong", true)).toBe("promote");
+  expect(adaptiveMove(tally, "solid", "work", true)).toBe("hold");
 });
 test("routine review lands on the review specialist, high-stakes review escalates to strong", () => {
   expect(pickRoute(defaults, verdict({ task: "review", difficulty: 1 })).slot).toBe("review");
