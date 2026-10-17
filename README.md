@@ -51,12 +51,15 @@ Routing **aktif otomatis** setiap session dimuat (default `enabled: true`). Mati
 /auto off
 ```
 
-Status dan keputusan terakhir:
+Status, keputusan terakhir, dan (bila debug aktif) trace routing:
 
 ```text
 /auto
 /auto explain
+/auto debug on|off
 ```
+
+`/auto debug on` mencatat ring buffer 30 event routing (verdict, keputusan adaptive + streak, hasil apply/setModel, percobaan failover) sebagai session entry — terlihat di `/auto explain` dan tersimpan di file sesi. Default off (tanpa overhead). Saat macet/berhenti, nyalakan debug, ulangi, lalu kirim isi trace.
 
 `--extension` hanya memuat extension; routing langsung jalan tanpa `/auto on`.
 
