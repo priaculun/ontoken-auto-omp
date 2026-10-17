@@ -24,7 +24,7 @@ export const defaults: Config = {
   slots: { fast: "gpt-6-luna", work: "glm-5.3-flash", review: "deepseek-v4-pro-0813", debug: "deepseek-v4-pro-0813", solid: "glm-5.3", strong: "gemini-3.8-flash", frontier: "gpt-6.1-sol" },
   maxThinking: {},
   jev: { model: "jev-latest", promptChars: 32000, timeoutMs: 12000 },
-  adaptive: { contextAware: true, shortPromptChars: 4000, midTurn: true, allowDemotion: true, maxEvaluationsPerTurn: 7, toolResultsPerEvaluation: 2 },
+  adaptive: { contextAware: true, shortPromptChars: 4000, midTurn: true, allowDemotion: false, maxEvaluationsPerTurn: 4, toolResultsPerEvaluation: 4 },
   failover: { enabled: true, chain: {} },
 };
 

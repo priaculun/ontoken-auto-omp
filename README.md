@@ -8,7 +8,7 @@ Native **OMP** extension yang merutekan setiap prompt ke model OnToken sesuai ti
 - **Heuristic fallback** jika classifier tidak tersedia atau gagal. Turn tetap berjalan.
 - Slot model: `fast`, `work`, `review`, `debug`, `solid`, `strong`, `frontier` — task-aware: review dan debug punya specialist sendiri.
 - **Risk-aware routing**: pekerjaan berisiko (data loss, production, security) tidak pernah turun di bawah `solid`.
-- **Adaptive promotion & demotion** mid-turn: setelah sejumlah hasil tool pada turn yang sama, Jev menilai ulang dan bisa naik ATAU turun slot (`adaptive.allowDemotion`, default on; demotion tidak pernah untuk pekerjaan berisiko).
+- **Adaptive promotion mid-turn**: setelah sejumlah hasil tool pada turn yang sama, Jev menilai ulang dan bisa naik slot. Demotion mati default (`adaptive.allowDemotion`, default off) karena verdict flip-flop antar evaluasi; kalaupun dinyalakan, demotion butuh 2 evaluasi berurutan ke slot bawah yang sama (hysteresis), tidak pernah untuk pekerjaan berisiko, dan tidak pernah di bawah `work`.
 - **Failover** pada retryable provider errors; auth, billing, quota, abort, dan context overflow tidak dipindahkan secara blind.
 - Redaction best-effort sebelum prompt/progress dikirim ke TypeSafe.
 - State route disimpan sebagai custom session entries agar branch/resume/compaction tidak kehilangan keputusan.
@@ -84,9 +84,9 @@ Overlay hanya perlu berisi key yang ingin diubah:
     "contextAware": true,
     "shortPromptChars": 4000,
     "midTurn": true,
-    "allowDemotion": true,
-    "maxEvaluationsPerTurn": 2,
-    "toolResultsPerEvaluation": 2
+    "allowDemotion": false,
+    "maxEvaluationsPerTurn": 4,
+    "toolResultsPerEvaluation": 4
   },
   "failover": {
     "enabled": true,

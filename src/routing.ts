@@ -46,6 +46,17 @@ export function pickRoute(cfg: Config, v: Verdict): Route {
   if (v.source === "fallback") thinking = "low";
   return { slot, thinking, rule };
 }
+export interface DemoteTally { slot: Slot | undefined; votes: number }
+// Demotion hysteresis: a single Jev verdict must not swap to a weaker model.
+// Verdicts flip-flop between evaluations (notably the risk flag), so demotion
+// requires `required` consecutive evaluations targeting the same lower slot.
+export function confirmDemotion(tally: DemoteTally, target: Slot, required = 2): boolean {
+  if (tally.slot === target) tally.votes += 1;
+  else { tally.slot = target; tally.votes = 1; }
+  if (tally.votes < required) return false;
+  tally.slot = undefined; tally.votes = 0;
+  return true;
+}
 export function resolveRoute(cfg: Config, route: Route, models: readonly Model[], needsVision: boolean, minSlot = 0): { model: Model; route: Route } | undefined {
   const requested = SLOTS.indexOf(route.slot);
   const candidates = [requested, ...SLOTS.map((_, i) => i).filter(i => i !== requested)];

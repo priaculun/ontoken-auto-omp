@@ -1,10 +1,21 @@
 import { expect, test } from "bun:test";
 import { defaults } from "../src/config.ts";
-import { heuristic, pickRoute, type Verdict } from "../src/routing.ts";
+import { confirmDemotion, heuristic, pickRoute, type Slot, type Verdict } from "../src/routing.ts";
 
 function verdict(over: Partial<Verdict>): Verdict {
   return { task: "coding", difficulty: 1, risk: false, needsReasoning: false, needsVision: false, longHorizon: false, confidence: 0.9, source: "jev", ...over };
 }
+test("demotion needs two consecutive evaluations on the same lower slot", () => {
+  const tally = { slot: undefined as Slot | undefined, votes: 0 };
+  expect(confirmDemotion(tally, "work")).toBe(false);
+  expect(confirmDemotion(tally, "work")).toBe(true);
+});
+test("demotion votes reset when evaluations disagree on the target slot", () => {
+  const tally = { slot: undefined as Slot | undefined, votes: 0 };
+  expect(confirmDemotion(tally, "work")).toBe(false);
+  expect(confirmDemotion(tally, "debug")).toBe(false);
+  expect(confirmDemotion(tally, "debug")).toBe(true);
+});
 test("routine review lands on the review specialist, high-stakes review escalates to strong", () => {
   expect(pickRoute(defaults, verdict({ task: "review", difficulty: 1 })).slot).toBe("review");
   expect(pickRoute(defaults, verdict({ task: "review", difficulty: 1, risk: true })).slot).toBe("strong");

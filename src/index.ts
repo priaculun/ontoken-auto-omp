@@ -2,8 +2,7 @@ import { Effort } from "@oh-my-pi/pi-ai";
 import type { ExtensionAPI, ExtensionContext } from "@oh-my-pi/pi-coding-agent";
 import { classify } from "./classifier.ts";
 import { BUDGETS, SLOTS, THINKING, ceiling, configPaths, loadConfig, type Budget, type Config, type Slot } from "./config.ts";
-import { contentText, heuristic, pickRoute, redact, resolveRoute, transientError, type Route, type Verdict } from "./routing.ts";
-
+import { contentText, confirmDemotion, heuristic, pickRoute, redact, resolveRoute, transientError, type DemoteTally, type Route, type Verdict } from "./routing.ts";
 interface State {
   route: Route;
   modelId: string;
@@ -48,7 +47,7 @@ export default function ontokenAuto(omp: ExtensionAPI) {
   let tools = 0;
   let pending: Promise<void> | undefined;
   const seenTools = new Set<string>();
-
+  let demote: DemoteTally = { slot: undefined, votes: 0 };
   function config(ctx: ExtensionContext): Config { return loadConfig(agentDir, ctx.cwd, options); }
   function record(ctx: ExtensionContext, reason: string) {
     if (!state) return;
@@ -60,6 +59,7 @@ export default function ontokenAuto(omp: ExtensionAPI) {
   function reset() {
     controller.abort(); controller = new AbortController();
     active = false; pending = undefined; objective = ""; progress = []; tools = 0; seenTools.clear();
+    demote = { slot: undefined, votes: 0 };
   }
   function restore(ctx: ExtensionContext) {
     reset(); options = {}; state = undefined; lastExplain = "Belum ada routing.";
@@ -163,11 +163,16 @@ export default function ontokenAuto(omp: ExtensionAPI) {
       const picked = pickRoute(cfg, v);
       const target = SLOTS.indexOf(picked.slot), current = SLOTS.indexOf(previous.route.slot);
       if (target > current) {
+        // Promotion is immediate; thinking never drops on the way up. Any pending
+        // demotion votes are stale once the trajectory turns upward.
+        demote = { slot: undefined, votes: 0 };
         if (THINKING.indexOf(picked.thinking) < THINKING.indexOf(previous.route.thinking)) picked.thinking = previous.route.thinking;
       } else if (target < current) {
-        // Demotion: only with consent, never mid-turn for risky work, never below work.
+        // Demotion: only with consent, never mid-turn for risky work, never below work,
+        // and only after consecutive evaluations agree on the same lower slot (hysteresis).
         if (!cfg.adaptive.allowDemotion || v.risk || target < SLOTS.indexOf("work")) return;
         if (previous.route.rule.includes("+failover")) return;
+        if (!confirmDemotion(demote, picked.slot)) return;
       } else return;
       picked.rule += "+adaptive";
       if (await apply(cfg, ctx, picked, v, signal, target > current ? current + 1 : 0)) record(ctx, `Adaptive ${target > current ? "promotion" : "demotion"} after ${tools} tool results`);
