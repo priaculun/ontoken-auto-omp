@@ -9,7 +9,7 @@ export type Thinking = typeof THINKING[number];
 export type Budget = typeof BUDGETS[number];
 export interface Config {
   enabled: boolean;
-  provider: string;
+  debug: boolean;
   budget: Budget;
   slots: Record<Slot, string>;
   maxThinking: Partial<Record<Slot, Thinking>>;
@@ -19,6 +19,7 @@ export interface Config {
 }
 export const defaults: Config = {
   enabled: true,
+  debug: false,
   provider: "ontoken",
   budget: "balanced",
   slots: { fast: "gpt-6-luna", work: "glm-5.3-flash", review: "deepseek-v4-pro-0813", debug: "deepseek-v4-pro-0813", solid: "glm-5.3", strong: "gemini-3.8-flash", frontier: "gpt-6.1-sol" },
@@ -65,7 +66,7 @@ function validate(value: ObjectValue): Config {
     if (!object(value[key])) throw new Error(`Invalid config: ${key}`);
   const c = value as unknown as Config;
   if (!object(c.failover.chain)) throw new Error("Invalid failover.chain");
-  for (const [name, item] of Object.entries({ enabled: c.enabled, contextAware: c.adaptive.contextAware, midTurn: c.adaptive.midTurn, allowDemotion: c.adaptive.allowDemotion, failover: c.failover.enabled }))
+  for (const [name, item] of Object.entries({ enabled: c.enabled, debug: c.debug, contextAware: c.adaptive.contextAware, midTurn: c.adaptive.midTurn, allowDemotion: c.adaptive.allowDemotion, failover: c.failover.enabled }))
     if (typeof item !== "boolean") throw new Error(`Invalid boolean: ${name}`);
   for (const [name, item] of Object.entries({ provider: c.provider, model: c.jev.model, ...c.slots }))
     if (typeof item !== "string" || !item.trim()) throw new Error(`Invalid model/provider: ${name}`);

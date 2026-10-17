@@ -26,3 +26,10 @@ test("malformed and obsolete Pi config fields do not silently change routing", (
     expect(() => loadConfig(root, root, { failover: { chain: { work: ["unknown"] } } })).toThrow("chain");
   } finally { rmSync(root, { recursive: true }); }
 });
+test("debug is a first-class session config, off by default", () => {
+  const root = mkdtempSync(join(tmpdir(), "omp-auto-debug-"));
+  try {
+    expect(loadConfig(root, root).debug).toBe(false);
+    expect(loadConfig(root, root, { debug: true }).debug).toBe(true);
+  } finally { rmSync(root, { recursive: true }); }
+});

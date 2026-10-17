@@ -44,14 +44,12 @@ export default function ontokenAuto(omp: ExtensionAPI) {
   let options: Record<string, unknown> = {};
   let state: State | undefined;
   let trace: TraceEvent[] = [];
-  function traceEnabled(): boolean { return (options.debug as boolean | undefined) ?? false; }
   function traceEvent(ctx: ExtensionContext, kind: string, detail: string) {
-    if (!traceEnabled()) return;
+    if (!config(ctx).debug) return;
     const now = new Date();
     const stamp = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
     trace = [...trace.slice(-(TRACE_LIMIT - 1)), { t: stamp, kind, detail: detail.slice(0, 220) }];
     omp.appendEntry(TRACE, { events: structuredClone(trace) });
-    void ctx;
   }
   let controller = new AbortController();
   let active = false;
@@ -209,11 +207,10 @@ export default function ontokenAuto(omp: ExtensionAPI) {
   omp.on("auto_retry_start", async (event, ctx) => {
     if (ctx.agent.kind !== "main" || !active || !state || controller.signal.aborted) return;
     const cfg = config(ctx);
-    if (!traceEnabled()) {
-      if (!cfg.enabled || !cfg.failover.enabled || !transientError(event.errorMessage)) return;
-    } else {
-      traceEvent(ctx, "retry", `error=${String(event.errorMessage).slice(0, 120)} transient=${transientError(event.errorMessage)}`);
-      if (!cfg.enabled || !cfg.failover.enabled || !transientError(event.errorMessage)) { traceEvent(ctx, "retry", "skip: non-transient/disabled"); return; }
+    if (cfg.debug) traceEvent(ctx, "retry", `error=${String(event.errorMessage).slice(0, 120)} transient=${transientError(event.errorMessage)}`);
+    if (!cfg.enabled || !cfg.failover.enabled || !transientError(event.errorMessage)) {
+      if (cfg.debug) traceEvent(ctx, "retry", "skip: non-transient/disabled");
+      return;
     }
     // Native OMP fallback may already have switched; never fight that decision.
     if (ctx.model?.provider !== cfg.provider || ctx.model.id !== state.modelId) { traceEvent(ctx, "retry", "skip: native already switched"); return; }
@@ -261,7 +258,7 @@ export default function ontokenAuto(omp: ExtensionAPI) {
       if (!["status", "explain"].includes(cmd)) omp.appendEntry(OPTIONS, options);
       const cfg = config(ctx);
       ctx.ui.setStatus("ontoken-auto", cfg.enabled ? "auto siap" : undefined);
-      const header = `enabled=${cfg.enabled} debug=${traceEnabled()} budget=${cfg.budget} provider=${cfg.provider}\n${SLOTS.map(s => `${s}=${cfg.slots[s]}`).join("\n")}\nConfig: ${configPaths(agentDir, ctx.cwd).join(" → ")}\nCommands change this session only.`;
+      const header = `enabled=${cfg.enabled} debug=${cfg.debug} budget=${cfg.budget} provider=${cfg.provider}\n${SLOTS.map(s => `${s}=${cfg.slots[s]}`).join("\n")}\nConfig: ${configPaths(agentDir, ctx.cwd).join(" → ")}\nCommands change this session only.`;
       const traceBlock = trace.length ? `\n\ntrace (${trace.length}):\n${trace.map(e => `[${e.t}] ${e.kind}: ${e.detail}`).join("\n")}` : "";
       ctx.ui.notify(`${header}\n\n${lastExplain}${traceBlock}`, "info");
     },
